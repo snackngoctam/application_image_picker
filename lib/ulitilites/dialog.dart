@@ -52,11 +52,8 @@ openAlertDialog(BuildContext context, String title, String content,
                       child: Container(
                         // height: 80,
                         alignment: Alignment.bottomCenter,
-                        child: FlatButton(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: new BorderRadius.circular(5.0),
-                          ),
-                          padding: EdgeInsets.zero,
+                        child: ElevatedButton(
+                       
                           onPressed: () {
                             func == null
                                 ? CustomNavigator().pop(context)
@@ -65,6 +62,11 @@ openAlertDialog(BuildContext context, String title, String content,
                                     func();
                                   }();
                           },
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(
+                                borderRadius:
+                                    BorderRadius.all(Radius.circular(5))),
+                          ),
                           child: Container(
                               decoration: BoxDecoration(
                                 borderRadius:
