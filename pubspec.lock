@@ -6,7 +6,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "6c1b11d382d7200910c5194c6ad5ee2915aca1c4"
+      resolved-ref: "09cb291cedcdfc356ea036b314ea30a78556ef49"
       url: "https://github.com/snackngoctam/android_gallery_picker.git"
     source: git
     version: "0.0.1"
