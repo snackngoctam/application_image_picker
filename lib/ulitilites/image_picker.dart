@@ -13,13 +13,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class ApplicationImagePicker {
-  static Future<File> pickImage(BuildContext context,
-      {@required ImageSource source,
-      double maxWidth,
-      double maxHeight,
-      int imageQuality,
-      String appBarColor,
-      String titleAppBar}) async {
+  static Future<File?> pickImage(BuildContext context,
+      {@required ImageSource? source,
+      double? maxWidth,
+      double? maxHeight,
+      int? imageQuality,
+      String? appBarColor,
+      String? titleAppBar, bool? isPreviewPlayer}) async {
     assert(source != null);
     try {
       bool permission = false;
@@ -41,12 +41,12 @@ class ApplicationImagePicker {
       cameras = await availableCameras();
       if (cameras == null || cameras.length == 0) {
         openAlertDialog(
-            context, Common.stringNotification, Common.stringAlertCamera);
+            context, Common.stringNotification!, Common.stringAlertCamera!);
         return null;
       }
       Future.delayed(Duration(seconds: 2));
       List<dynamic> resultCamera = await CustomNavigator().push(context,
-          CameraAndroidHome(cameras: cameras, isForceFrontCamera: false));
+          CameraAndroidHome(cameras: cameras, isForceFrontCamera: false,previewPlayer: false,));
       if (resultCamera == null) {
         return null;
       }
@@ -56,12 +56,12 @@ class ApplicationImagePicker {
       if (resultCamera.length == 0) {
         return null;
       }
-      XFile image = resultCamera[0];
+      File image = resultCamera[0];
       File file = File(image.path);
       return compressImage(file);
     } else if (source == ImageSource.gallery && Platform.isAndroid) {
       print(titleAppBar);
-      String event = await MethodChannel("flutter.io/gallery")
+      String? event = await MethodChannel("flutter.io/gallery")
           .invokeMethod<String>('gallery', {
         "multiPick": "false",
         "colorAppBar": appBarColor ?? "#000000",
@@ -73,7 +73,7 @@ class ApplicationImagePicker {
     } else {
       final picker = ImagePicker();
       final _image = await picker.getImage(
-          source: source,
+          source: source!,
           maxHeight: 2450,
           maxWidth: 1750,
           imageQuality: imageQuality);
@@ -85,13 +85,13 @@ class ApplicationImagePicker {
     }
   }
 
-  static Future<List<File>> pickImages(BuildContext context,
-      { double maxWidth,
-        double maxHeight,
-        int imageQuality,
-        String appBarColor,
-        String titleAppBar,
-        int limitMultiPick}) async {
+  static Future<List<File>?> pickImages(BuildContext context,
+      { double? maxWidth,
+        double? maxHeight,
+        int? imageQuality,
+        String? appBarColor,
+        String? titleAppBar,
+        int? limitMultiPick}) async {
     try {
       bool permission = false;
       if (ApplicationPlatform.isAndroid) {
@@ -104,11 +104,11 @@ class ApplicationImagePicker {
       return null;
     }
     if (Platform.isAndroid) {
-      List<File> images = await AndroidGalleryPicker.images(colorAppBar:appBarColor,
+      List<File>? images = await AndroidGalleryPicker.images(colorAppBar:appBarColor,
           titleAppBar:titleAppBar, limitMultiPick:limitMultiPick);
       return images;
     } else {
-      List<dynamic> event = await MethodChannel("flutter.io/gallery")
+      List<dynamic>? event = await MethodChannel("flutter.io/gallery")
           .invokeMethod<List<dynamic>>('gallery', {
         "limitMultiPick": (limitMultiPick ?? 3).toString()
       });

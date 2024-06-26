@@ -2,14 +2,29 @@ import 'dart:async';
 import 'dart:io';
 import 'package:application_image_picker/ulitilites/dialog.dart';
 import 'package:camera/camera.dart';
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:flutter_native_image/flutter_native_image.dart';
+import 'package:native_screenshot/native_screenshot.dart';
 
 class CameraAndroidHome extends StatefulWidget {
-  final List<CameraDescription> cameras;
-  final bool isForceFrontCamera;
-  CameraAndroidHome({@required this.cameras, this.isForceFrontCamera = false});
+  final List<CameraDescription>? cameras;
+  final String? title;
+  final bool? isIDCard;
+  final bool? previewPlayer;
+  final bool? isForceFrontCamera;
+  final String? frame;
+  final String? warning;
+  final String? iconCamera;
+
+  CameraAndroidHome(
+      {@required this.cameras,
+      this.isIDCard,
+      this.title,
+      this.previewPlayer = false,
+      this.isForceFrontCamera = false,
+      this.frame,
+      this.warning = "",
+      this.iconCamera});
   @override
   _State createState() {
     return _State();
@@ -33,56 +48,60 @@ void logError(String code, String message) =>
     print('Error: $code\nError Message: $message');
 
 class _State extends State<CameraAndroidHome> with WidgetsBindingObserver {
-  CameraController controller;
-  String imagePath;
+  CameraController? controller;
+  String? imagePath;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    if (controller != null) {
+      controller?.setFlashMode(FlashMode.off);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       setCamera();
     });
   }
 
   void setCamera() {
-    if (widget.cameras.length > 0) {
-      CameraDescription camDesc;
-      if (widget.isForceFrontCamera) {
-        for (int i = 0; i <= widget.cameras.length - 1; i++) {
-          if (widget.cameras[i].lensDirection == CameraLensDirection.front) {
-            camDesc = widget.cameras[i];
+    if ((widget.cameras?.length??0) > 0) {
+      CameraDescription? camDesc;
+      if (widget.isForceFrontCamera!) {
+        for (int i = 0; i <= (widget.cameras?.length??0) - 1; i++) {
+          if (widget.cameras![i].lensDirection == CameraLensDirection.front) {
+            camDesc = widget.cameras![i];
             break;
           }
         }
-        if (camDesc == null) camDesc = widget.cameras.first;
+        if (camDesc == null) camDesc = widget.cameras!.first;
       } else {
-        for (int i = 0; i <= widget.cameras.length - 1; i++) {
-          if (widget.cameras[i].lensDirection == CameraLensDirection.back) {
-            camDesc = widget.cameras[i];
+        for (int i = 0; i <= widget.cameras!.length - 1; i++) {
+          if (widget.cameras?[i].lensDirection == CameraLensDirection.back) {
+            camDesc = widget.cameras![i];
             break;
           }
         }
-        if (camDesc == null) camDesc = widget.cameras.first;
+        if (camDesc == null) camDesc = widget.cameras!.first;
       }
       onNewCameraSelected(camDesc);
     }
   }
 
   void rotateCamera() {
-    if (widget.cameras.length > 0) {
-      CameraDescription camDesc;
-      for (int i = 0; i <= widget.cameras.length - 1; i++) {
-        if (widget.cameras[i].lensDirection !=
-            controller.description.lensDirection) {
-          if (widget.cameras[i].lensDirection == CameraLensDirection.back ||
-              widget.cameras[i].lensDirection == CameraLensDirection.front) {
-            camDesc = widget.cameras[i];
+    if ((widget.cameras?.length??0) > 0) {
+      CameraDescription? camDesc;
+      for (int i = 0; i <= (widget.cameras?.length??0) - 1; i++) {
+        if (widget.cameras?[i].lensDirection !=
+            controller?.description.lensDirection) {
+          if (widget.cameras?[i].lensDirection == CameraLensDirection.back ||
+              widget.cameras?[i].lensDirection == CameraLensDirection.front) {
+            camDesc = widget.cameras![i];
             break;
           }
         }
       }
-      if (camDesc == null) camDesc = widget.cameras.first;
+      if (camDesc == null) camDesc = widget.cameras!.first;
       onNewCameraSelected(camDesc);
     }
   }
@@ -90,150 +109,47 @@ class _State extends State<CameraAndroidHome> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    if (controller != null) {
-      controller.dispose();
-    }
+    controller?.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // App state changed before we got the chance to initialize.
-    if (controller == null || !controller.value.isInitialized) {
+    if (controller == null || !controller!.value.isInitialized) {
       return;
     }
     if (state == AppLifecycleState.inactive) {
-      if (controller != null) {
-        controller.dispose();
-      }
+      controller?.dispose();
     } else if (state == AppLifecycleState.resumed) {
       if (controller != null) {
-        onNewCameraSelected(controller.description);
+        onNewCameraSelected(controller!.description);
       }
     }
-  }
-
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
-        backgroundColor: Colors.black,
-        title: Text(
-          'Camera',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
-      body: Container(
-        color: Colors.black,
-        child: Column(
-          children: <Widget>[
-            Expanded(
-              child: Container(
-                child: Center(
-                  child: _cameraPreviewWidget(),
-                ),
-                color: Colors.black,
-              ),
-            ),
-            Padding(
-              padding: EdgeInsets.only(bottom: 8.0,top: 8.0),
-              child: Container(
-                width: MediaQuery.of(context).size.width,
-                child: _captureControlRowWidget(),
-                color: Colors.black,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _cameraPreviewWidget() {
-    if (controller == null || !controller.value.isInitialized) {
-      return Container();
-    } else {
-      return CameraPreview(controller);
-    }
-  }
-
-  Widget _captureControlRowWidget() {
-    return Stack(
-      children: <Widget>[
-        Center(
-          child: MaterialButton(
-            child: Container(
-              padding: EdgeInsets.all(4.0),
-              decoration:
-              BoxDecoration(shape: BoxShape.circle, color: Colors.white),
-              width: MediaQuery.of(context).size.height * 0.065,
-              height: MediaQuery.of(context).size.height * 0.065,
-              child: Container(
-                padding: EdgeInsets.all(4.0),
-                decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white,
-                    border: Border.all(color: Colors.black, width: 1.0)),
-              ),
-            ),
-            onPressed: controller != null &&
-                controller.value.isInitialized &&
-                !controller.value.isRecordingVideo
-                ? onTakePictureButtonPressed
-                : null,
-          ),
-        ),
-        Align(
-          alignment: Alignment.centerRight,
-          child: Padding(
-            padding: EdgeInsets.only(
-                right: MediaQuery.of(context).size.width * 0.05,
-                top: (MediaQuery.of(context).size.height * 0.065) / 8),
-            child: IconButton(
-              icon: Icon(
-                Icons.crop_rotate,
-                color: Colors.white,
-                size: MediaQuery.of(context).size.height * 0.065 / 2,
-              ),
-              onPressed: () {
-                if (controller != null) {
-                  rotateCamera();
-                }
-              },
-            ),
-          ),
-        ),
-      ],
-    );
   }
 
   String timestamp() => DateTime.now().millisecondsSinceEpoch.toString();
 
   void showInSnackBar(String message) {
-    _scaffoldKey.currentState.showSnackBar(SnackBar(content: Text(message)));
+    // ScaffoldMessenger.of(context)
+    //     .showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void onNewCameraSelected(CameraDescription cameraDescription) async {
+  void onNewCameraSelected(CameraDescription? cameraDescription) async {
     if (controller != null) {
-      await controller.dispose();
+      await controller!.dispose();
     }
-    controller = CameraController(cameraDescription, ResolutionPreset.max,
+    controller = CameraController(cameraDescription!, ResolutionPreset.medium,
         enableAudio: false);
-
     // If the controller is updated then update the UI.
-    controller.addListener(() {
+    controller!.addListener(() {
       if (mounted) setState(() {});
-      if (controller.value.hasError) {
-        showInSnackBar('Camera error ${controller.value.errorDescription}');
+      if (controller!.value.hasError) {
+        showInSnackBar('Camera error ${controller!.value.errorDescription}');
       }
     });
-
     try {
-      controller.initialize().then((_) {
+      controller!.initialize().then((_) {
         if (!mounted) {
           return;
         }
@@ -249,7 +165,7 @@ class _State extends State<CameraAndroidHome> with WidgetsBindingObserver {
   }
 
   void onTakePictureButtonPressed() {
-    takePicture().then((String filePath) {
+    takePicture().then((String? filePath) {
       if (mounted) {
         setState(() {
           imagePath = filePath;
@@ -259,37 +175,389 @@ class _State extends State<CameraAndroidHome> with WidgetsBindingObserver {
     });
   }
 
-  Future<String> takePicture() async {
-    if (!controller.value.isInitialized) {
+  Future<void> setFlashMode(FlashMode mode) async {
+    if (controller == null) {
+      return;
+    }
+
+    try {
+      if (controller != null &&
+          controller!.description.lensDirection == CameraLensDirection.front) {
+        return;
+      }
+      if (controller != null) {
+        await controller!.setFlashMode(mode);
+      }
+    } on CameraException catch (e) {
+      _showCameraException(e);
+      rethrow;
+    }
+  }
+
+  Future<String?> takePicture() async {
+    if (!controller!.value.isInitialized) {
       showInSnackBar('Error: select a camera first.');
       return null;
     }
     File fileImage;
-    if (controller.value.isTakingPicture) {
+    if (controller!.value.isTakingPicture) {
       // A capture is already pending, do nothing.
       return null;
     }
 
+    setFlashMode(FlashMode.off);
     try {
-      XFile file = await controller.takePicture();
-      fileImage = File(file.path);
+      XFile file = await controller!.takePicture();
+      if (widget.previewPlayer!) {
+        fileImage = await ImageProcessor.crop(
+            file.path,
+            MediaQuery.of(context).size.width,
+            MediaQuery.of(context).size.height,
+            widget.previewPlayer!);
+      } else {
+        fileImage = File(file.path);
+      }
       List<dynamic> result = [];
-      result.add(file);
+      result.add(fileImage);
       bool isCurrentFront =
-      controller.description.lensDirection == CameraLensDirection.front
-          ? true
-          : false;
+          controller!.description.lensDirection == CameraLensDirection.front
+              ? true
+              : false;
       result.add(isCurrentFront);
       CustomNavigator().pop(context, object: result);
-    } on CameraException catch (e) {
-      _showCameraException(e);
-      return null;
+    } on CameraException catch (_) {
+      try {
+        // setState(() {
+        //   isScreenshot = true;
+        // });
+        await Future.delayed(Duration(seconds: 1));
+        String? path = await NativeScreenshot.takeScreenshot();
+        if (path != null) {
+          fileImage = await ImageProcessor.crop(
+              path,
+              MediaQuery.of(context).size.width,
+              MediaQuery.of(context).size.height,
+              widget.previewPlayer!);
+          // setState(() {
+          //   isScreenshot = false;
+          // });
+          List<dynamic> result = [];
+          result.add(fileImage);
+          bool isCurrentFront =
+              controller!.description.lensDirection == CameraLensDirection.front
+                  ? true
+                  : false;
+          result.add(isCurrentFront);
+          CustomNavigator().pop(context, object: result);
+        } else {
+          return null;
+        }
+      } catch (e) {
+        // _showCameraException(e);
+        return null;
+      }
     }
     return fileImage.path;
   }
 
   void _showCameraException(CameraException e) {
-    logError(e.code, e.description);
+    logError(e.code, e.description!);
     showInSnackBar('Error: ${e.code}\n${e.description}');
+  }
+
+  Widget _cameraPreviewWidgetIDCard() {
+    if (controller == null || !controller!.value.isInitialized) {
+      return Container();
+    } else {
+      if (widget.previewPlayer!) {
+        return Container(
+          height: MediaQuery.of(context).size.height,
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.topCenter,
+            children: <Widget>[
+              CustomPaint(
+                foregroundPainter: Paint(),
+                size: Size.fromHeight(MediaQuery.of(context).size.height),
+                child: CameraPreview(
+                  controller!,
+                ),
+              ),
+              ClipPath(clipper: Clip(), child: CameraPreview(controller!))
+            ],
+          ),
+        );
+      }
+      return CameraPreview(controller!);
+    }
+  }
+
+  Widget _frameCameraIdCard() {
+    return Container(
+      height: MediaQuery.of(context).size.height,
+      width: MediaQuery.of(context).size.width,
+      child: Column(
+        children: [
+          Container(
+            height: MediaQuery.of(context).padding.top +
+                (MediaQuery.of(context).size.width * 0.05),
+          ),
+          Row(
+            children: [
+              Opacity(
+                child: InkWell(
+                  onTap: () => CustomNavigator().pop(context),
+                  child: Container(
+                    width: 48.0,
+                    height: 48.0,
+                    padding: EdgeInsets.only(
+                        left: (MediaQuery.of(context).size.width * 0.05)),
+                    child: Icon(
+                      Icons.close,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+                opacity: 1.0,
+              )
+            ],
+          ),
+          Container(
+            height: MediaQuery.of(context).size.height * 0.089,
+          ),
+          if (widget.frame != null)
+            Container(
+              height: 300,
+              decoration: BoxDecoration(
+                  image: DecorationImage(
+                      image: AssetImage(widget.frame!), fit: BoxFit.fill)),
+              // child: Image.asset(Assets.imgFrameIdCard),
+            ),
+          if (widget.warning != null)
+            Text(
+              widget.warning!,
+              style: TextStyle(
+                  color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          Expanded(child: Container()),
+          (widget.previewPlayer!)
+              ? Container(
+            width: MediaQuery.of(context).size.width,
+            padding: EdgeInsets.all(
+                MediaQuery.of(context).size.width * 0.05),
+            decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(16.0),
+                    topRight: Radius.circular(16.0))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Text(
+                  widget.title ?? "",
+                  style: TextStyle(
+                      fontSize: 18.0,
+                      color: Colors.black,
+                      fontWeight: FontWeight.bold),
+                ),
+                Container(
+                  height: MediaQuery.of(context).size.width * 0.05,
+                ),
+                Container(
+                  height: MediaQuery.of(context).size.height * 0.08,
+                  width: MediaQuery.of(context).size.height * 0.08,
+                  child: MaterialButton(
+                    child: widget.iconCamera != null
+                        ? Image.asset(
+                      widget.iconCamera!,
+                    )
+                        : Container(
+                      padding: EdgeInsets.all(4.0),
+                      decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white),
+                      width:
+                      MediaQuery.of(context).size.height *
+                          0.08,
+                      height:
+                      MediaQuery.of(context).size.height *
+                          0.08,
+                      child: Container(
+                        padding: EdgeInsets.all(4.0),
+                        decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white,
+                            border: Border.all(
+                                color: Colors.black,
+                                width: 1.0)),
+                      ),
+                    ),
+                    onPressed: controller != null &&
+                        controller!.value.isInitialized &&
+                        !controller!.value.isRecordingVideo
+                        ? onTakePictureButtonPressed
+                        : null,
+                  ),
+                )
+              ],
+            ),
+          )
+              : _captureControlRowWidget(),
+        ],
+      ),
+    );
+  }
+
+  Widget _captureControlRowWidget() {
+    return Container(
+      color: Colors.black,
+      padding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+      child: Stack(
+        children: <Widget>[
+          Center(
+            child: MaterialButton(
+              child: Icon(
+                Icons.camera,
+                size: MediaQuery.of(context).size.height * 0.065,
+                color: Colors.white,
+              ),
+              onPressed: controller != null &&
+                      controller!.value.isInitialized &&
+                      !controller!.value.isRecordingVideo
+                  ? onTakePictureButtonPressed
+                  : null,
+            ),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: EdgeInsets.only(
+                  top: (MediaQuery.of(context).size.height * 0.065) / 8),
+              child: IconButton(
+                icon: Icon(
+                  Icons.crop_rotate,
+                  color: Colors.white,
+                  size: MediaQuery.of(context).size.height * 0.065 / 2,
+                ),
+                onPressed: () {
+                  if (controller != null) {
+                    rotateCamera();
+                  }
+                },
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        key: _scaffoldKey,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [_cameraPreviewWidgetIDCard(), _frameCameraIdCard()],
+        ));
+  }
+}
+
+class Paint extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawColor(
+      Colors.grey.withOpacity(0.8),
+      BlendMode.dstOut,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) {
+    // TODO: implement shouldRepaint
+    return true;
+  }
+}
+
+class Clip extends CustomClipper<Path> {
+  @override
+  getClip(Size size) {
+    final top = size.height - (size.height * 0.8).toInt();
+    Path path = Path()
+      ..addRRect(RRect.fromRectAndRadius(
+          Rect.fromLTWH(0, top, size.width, size.height * 0.37),
+          Radius.circular(0.0)));
+    return path;
+  }
+
+  @override
+  bool shouldReclip(oldClipper) {
+    // TODO: implement shouldReclip
+    return true;
+  }
+}
+
+class ImageProcessor {
+  static Future<File> crop(String imagePath, double maxWidth, double maxHeight,
+      bool isPreviewPlayer) async {
+    try {
+      ImageProperties properties = await FlutterNativeImage.getImageProperties(imagePath);
+      final height = properties.height;
+      final width = properties.width;
+      if (isPreviewPlayer) {
+        final top = height! - (height * 0.8).toInt();
+        if (Platform.isIOS) {
+          File croppedFile = await FlutterNativeImage.cropImage(imagePath, 0,
+              (top * 1.2).round(), width!, (height! * 0.39).round());
+          return croppedFile;
+        } else {
+          if (height! < width!) {
+            File croppedFile = await FlutterNativeImage.cropImage(imagePath,
+                (top * 1.2).round(), 0, (width * 0.43).round(), height);
+            return croppedFile;
+          } else {
+            final top = height - (height * 0.6).toInt();
+            File croppedFile = await FlutterNativeImage.cropImage(imagePath,
+                (top * 1.5).round(), 0, (width * 0.37).round(),(height * 0.6).round());
+            return croppedFile;
+          }
+        }
+      } else {
+        final top = height! - (height * 0.9).toInt();
+        if (Platform.isIOS) {
+          File croppedFile = await FlutterNativeImage.cropImage(imagePath, 0,
+              (top * 1.2).round(), width!, (height * 0.8).round());
+          return croppedFile;
+        }else{
+          File croppedFile = await FlutterNativeImage.cropImage(
+              imagePath, 0, (top * 1.5).round(), (width! * 0.43).round(),height!);
+          return croppedFile;
+        }
+      }
+    } catch (e) {
+      File compressedFile = await FlutterNativeImage.compressImage(imagePath,
+          quality: 100,
+          targetWidth:maxWidth.round(),
+          targetHeight:maxHeight.round());
+      ImageProperties properties =
+      await FlutterNativeImage.getImageProperties(compressedFile.path);
+      final height = properties.height;
+      final width = properties.width;
+      if(isPreviewPlayer){
+        final top = height! - (height * 0.8).toInt();
+        File croppedFile = await FlutterNativeImage.cropImage(imagePath, (width! * 0.1).round(), (top * 3.3).round(), (width * 2.4).round(), (height * 0.8).round());
+        return croppedFile;
+      }else{
+        final top = height! - (height * 0.6).toInt();
+        File croppedFile = await FlutterNativeImage.cropImage(
+            imagePath,
+            (width! * 0.1).round(),
+            top,
+            (width * 2.5).round(),
+            (height*2).round());
+        return croppedFile;
+      }
+    }
   }
 }
